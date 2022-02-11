@@ -37,7 +37,7 @@ class CausalLMWrapper:
             self._model.parallelize()
 
     def get_token_probabilities(self, input_text: str, prompt: str) -> torch.Tensor:
-        input_text = input_text + prompt
+        input_text += prompt
         inputs = self._tokenizer.batch_encode_plus([input_text], truncation=True, return_tensors='pt')
         inputs = {key: val.to(self._device) for key, val in inputs.items()}
         output = self._model(**inputs)['logits']
@@ -62,8 +62,10 @@ class MaskedLMWrapper:
         input_ids = text_ids + prompt_ids
         input_ids = torch.tensor([self._tokenizer.build_inputs_with_special_tokens(input_ids)], device=self._device)
 
-        assert sum(1 for id_ in input_ids[0] if id_ == self._tokenizer.mask_token_id) == 1, \
-            f"Input text must contain exactly one mask token ('{self._tokenizer.mask_token}'). Got '{input_text}'."
+        assert (
+            sum(id_ == self._tokenizer.mask_token_id for id_ in input_ids[0]) == 1
+        ), f"Input text must contain exactly one mask token ('{self._tokenizer.mask_token}'). Got '{input_text}'."
+
         scores = self._model(input_ids)['logits']
         mask_positions = (input_ids == self._tokenizer.mask_token_id)
         return scores[mask_positions]
@@ -144,4 +146,6 @@ if __name__ == '__main__':
         dataset_iterator.set_description(f"Texts (acc={100 * sum(1 for x, y in zip(labels, predictions) if x == y) / len(labels):5.2f})")
         dataset_iterator.refresh()
 
-    print(f"Final accuracy: {sum(1 for x, y in zip(labels, predictions) if x == y) / len(labels)} (total: {len(labels)})")
+    print(
+        f'Final accuracy: {sum(x == y for x, y in zip(labels, predictions)) / len(labels)} (total: {len(labels)})'
+    )

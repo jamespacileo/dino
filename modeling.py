@@ -270,7 +270,7 @@ class GPT2Wrapper(ModelWrapper):
         inputs = {k: v.to(self._device) for k, v in inputs.items()}
         input_length = inputs['input_ids'].shape[1]
         if min_length is not None:
-            min_length = min_length + input_length
+            min_length += input_length
         if max_length is not None:
             max_length = min(self.model._model.config.max_position_embeddings, max_length + input_length)
 
