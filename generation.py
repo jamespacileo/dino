@@ -45,8 +45,9 @@ class SelfDebiasingLogitsProcessor(LogitsProcessor):
         batch_size = scores.shape[0] // (1 + self.num_debiasing_prefixes)
         regular_sentence_indices = range(batch_size)
         for regular_sentence_idx in regular_sentence_indices:
-            bias_indices = self._get_bias_indices(regular_sentence_idx, batch_size)
-            if bias_indices:
+            if bias_indices := self._get_bias_indices(
+                regular_sentence_idx, batch_size
+            ):
                 self._debias_scores(scores, regular_sentence_idx, bias_indices)
         return scores
 
@@ -247,22 +248,21 @@ class SelfDebiasingGPT2LMHeadModel(GPT2LMHeadModel, GenerationMixin):
                 outputs, model_kwargs, is_encoder_decoder=self.config.is_encoder_decoder
             )
 
-        if return_dict_in_generate:
-            if self.config.is_encoder_decoder:
-                return SampleEncoderDecoderOutput(
-                    sequences=input_ids,
-                    scores=scores,
-                    encoder_attentions=encoder_attentions,
-                    encoder_hidden_states=encoder_hidden_states,
-                    decoder_attentions=decoder_attentions,
-                    decoder_hidden_states=decoder_hidden_states,
-                )
-            else:
-                return SampleDecoderOnlyOutput(
-                    sequences=input_ids,
-                    scores=scores,
-                    attentions=decoder_attentions,
-                    hidden_states=decoder_hidden_states,
-                )
-        else:
+        if not return_dict_in_generate:
             return input_ids
+        if self.config.is_encoder_decoder:
+            return SampleEncoderDecoderOutput(
+                sequences=input_ids,
+                scores=scores,
+                encoder_attentions=encoder_attentions,
+                encoder_hidden_states=encoder_hidden_states,
+                decoder_attentions=decoder_attentions,
+                decoder_hidden_states=decoder_hidden_states,
+            )
+        else:
+            return SampleDecoderOnlyOutput(
+                sequences=input_ids,
+                scores=scores,
+                attentions=decoder_attentions,
+                hidden_states=decoder_hidden_states,
+            )

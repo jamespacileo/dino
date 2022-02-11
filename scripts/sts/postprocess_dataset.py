@@ -42,16 +42,21 @@ def postprocess_dataset(
 
         example.label = example.label * (1 - label_smoothing) + (label_smoothing / 3 * 1.5)
 
-        if max_num_text_b_for_text_a_and_label > 0:
-            if num_text_b_for_text_a_and_label[(example.text_a, example.label)] >= max_num_text_b_for_text_a_and_label:
-                continue
+        if (
+            max_num_text_b_for_text_a_and_label > 0
+            and num_text_b_for_text_a_and_label[
+                (example.text_a, example.label)
+            ]
+            >= max_num_text_b_for_text_a_and_label
+        ):
+            continue
         postprocessed_dataset.append(example)
         num_text_b_for_text_a_and_label[(example.text_a, example.label)] += 1
 
     if add_sampled_pairs:
         sampled_dataset = []
 
-        for text_a in set(x.text_a for x in postprocessed_dataset):
+        for text_a in {x.text_a for x in postprocessed_dataset}:
             for _ in range(max_num_text_b_for_text_a_and_label):
                 text_b = rng.choice(postprocessed_dataset).text_b
                 sampled_dataset.append(DatasetEntry(text_a=text_a, text_b=text_b, label=0))

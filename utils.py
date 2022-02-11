@@ -78,8 +78,7 @@ def read_sts_inputs(path: str) -> List[str]:
         for row in reader:
             try:
                 sent_a, sent_b = row[5], row[6]
-                inputs.append(sent_a)
-                inputs.append(sent_b)
+                inputs.extend((sent_a, sent_b))
             except IndexError:
                 print(f"Cannot parse line {row}")
     print(f"Done loading {len(inputs)} inputs from file '{path}'")
@@ -121,6 +120,5 @@ class DatasetEntry:
     def read_list(path: str) -> List['DatasetEntry']:
         pairs = []
         with open(path, 'r', encoding='utf8') as fh:
-            for line in fh:
-                pairs.append(DatasetEntry(**json.loads(line)))
+            pairs.extend(DatasetEntry(**json.loads(line)) for line in fh)
         return pairs
